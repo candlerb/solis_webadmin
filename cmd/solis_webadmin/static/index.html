@@ -1,0 +1,78 @@
+<html>
+<head>
+<title>Solis Controller</title>
+<script src="modbus.js" type="text/javascript"></script>
+<script src="ui.js" type="text/javascript"></script>
+</head>
+<body>
+<fieldset>
+  <legend>Operating Mode</legend>
+  <select id="run_mode">
+    <option value=""></option>
+    <option value="33">Stop</option>
+    <option value="35">Run</option>
+  </select>
+  <button onclick="get_om();">Get</button>
+  <button onclick="set_om();">Set</button>
+</fieldset>
+<fieldset>
+  <legend>Time Periods</legend>
+  <table>
+  <thead>
+  <th>Charge</th>
+  <th>Discharge</th>
+  </thead>
+  <tr>
+  <td>
+  <input id="charge_u0" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_start">
+  -
+  <input id="charge_v0" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_end">
+  </td>
+  <td>
+  <input id="discharge_u0" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_start">
+  -
+  <input id="discharge_v0" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_end">
+  </td>
+  </tr>
+  <tr>
+  <td>
+  <input id="charge_u1" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_start">
+  -
+  <input id="charge_v1" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_end">
+  </td>
+  <td>
+  <input id="discharge_u1" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_start">
+  -
+  <input id="discharge_v1" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_end">
+  </td>
+  </tr>
+  <tr>
+  <td>
+  <input id="charge_u2" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_start">
+  -
+  <input id="charge_v2" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="charge_end">
+  </td>
+  <td>
+  <input id="discharge_u2" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_start">
+  -
+  <input id="discharge_v2" type="time" step="900" size="5" maxlength="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" name="discharge_end">
+  </td>
+  </tr>
+  </table>
+  <button onclick="get_times();">Get</button>
+  <button onclick="set_times();">Set</button>
+</fieldset>
+<fieldset>
+  <legend>Discharge limit</legend>
+  <label for="discharge_limit">Discharge limit:</label>
+  <select id="discharge_limit">
+    <option value=""></option>
+    <option value="10">1A</option>
+    <option value="50">5A</option>
+    <option value="1000">100A</option>
+  </select>
+  <button onclick="get_discharge();">Get</button>
+  <button onclick="set_discharge();">Set</button>
+</fieldset>
+</body>
+</html>
