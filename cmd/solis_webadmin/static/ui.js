@@ -8,9 +8,19 @@ function panic(e) {
     alert('Something went wrong! ' + e.name + ': ' + e.message);
 }
 
+function mkpanic(spinner) {
+    return function(e) {
+        spinner.style.visibility="hidden";
+        panic(e);
+    }
+}
+
 function get_om() {
+    const spinner = document.getElementById("loading_om");
+    spinner.style.visibility="visible";
     read_registers(43110, 1)
     .then(function(r) {
+        spinner.style.visibility="hidden";
         v = r[0];
         options = [
             elNew("option", {
@@ -35,20 +45,28 @@ function get_om() {
         }
         document.getElementById("run_mode").replaceChildren(...options);
     })
-    .catch(panic);
+    .catch(mkpanic(spinner));
 }
 
 function set_om() {
     v = document.getElementById("run_mode").value;
     if (!v) { return; }
+    const spinner = document.getElementById("loading_om");
+    spinner.style.visibility="visible";
     write_register(43110, parseInt(v))
-    .then(() => alert('Done!'))
-    .catch(panic);
+    .then(function() {
+        spinner.style.visibility="hidden";
+        alert('Done!');
+    })
+    .catch(mkpanic(spinner));
 }
 
 function get_discharge() {
+    const spinner = document.getElementById("loading_discharge");
+    spinner.style.visibility="visible";
     read_registers(43118, 1)
     .then(function(r) {
+        spinner.style.visibility="hidden";
         v = r[0];
         options = [
             elNew("option", {
@@ -78,15 +96,18 @@ function get_discharge() {
         }
         document.getElementById("discharge_limit").replaceChildren(...options);
     })
-    .catch(panic);
+    .catch(mkpanic(spinner));
 }
 
 function set_discharge() {
     v = document.getElementById("discharge_limit").value;
     if (!v) { return; }
     write_register(43118, parseInt(v))
-    .then(() => alert('Done!'))
-    .catch(panic);
+    .then(function() {
+        spinner.style.visibility="hidden";
+        alert('Done!');
+    })
+    .catch(mkpanic(spinner));
 }
 
 function mktime(h, m) {
@@ -104,8 +125,11 @@ function rdtime(s) {
 }
 
 function get_times() {
+    const spinner = document.getElementById("loading_times");
+    spinner.style.visibility="visible";
     read_registers(43143, 28)
     .then(function(r) {
+        spinner.style.visibility="hidden";
         document.getElementById("charge_u0").value = mktime(r[0], r[1]);
         document.getElementById("charge_v0").value = mktime(r[2], r[3]);
         document.getElementById("discharge_u0").value = mktime(r[4], r[5]);
@@ -119,7 +143,7 @@ function get_times() {
         document.getElementById("discharge_u2").value = mktime(r[24], r[25]);
         document.getElementById("discharge_v2").value = mktime(r[26], r[27]);
     })
-    .catch(panic);
+    .catch(mkpanic(spinner));
 }
 
 function set_times() {
@@ -139,7 +163,12 @@ function set_times() {
         rdtime(document.getElementById("discharge_u2").value),
         rdtime(document.getElementById("discharge_v2").value),
     );
+    const spinner = document.getElementById("loading_times");
+    spinner.style.visibility="visible";
     write_registers(43143, vals)
-    .then(() => alert('Done!'))
-    .catch(panic);
+    .then(function() {
+        spinner.style.visibility="hidden";
+        alert('Done!');
+    })
+    .catch(mkpanic(spinner));
 }
