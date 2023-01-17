@@ -26,3 +26,7 @@ blocked from the outside world!
 I run it behind an Apache reverse proxy, with mod_auth_openidc talking to a
 [Vault OpenID Connect provider](https://brian-candler.medium.com/using-vault-as-an-openid-connect-identity-provider-ee0aaef2bba2),
 and HTTPS with a LetsEncrypt certificate.
+
+The web interface by default binds to `127.0.0.1:8502`, so it only accepts
+connections from the local host.  If you really want to expose it directly
+to network traffic, then you'll need to supply a flag like `-listen :8502`

@@ -17,7 +17,7 @@ var optStation int
 var optStaticDir string
 
 func init() {
-	flag.StringVar(&optListen, "listen", ":8502", "Web listen address and port")
+	flag.StringVar(&optListen, "listen", "127.0.0.1:8502", "Web listen address and port")
 	flag.StringVar(&optStaticDir, "staticdir", "static", "Path to static HTML/JS content")
 	flag.StringVar(&optTarget, "target", "127.0.0.1:502", "Modbus TCP target address and port")
 	flag.IntVar(&optStation, "station", 1, "Modbus station ID")
