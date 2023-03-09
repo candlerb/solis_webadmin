@@ -61,6 +61,55 @@ function set_om() {
     .catch(mkpanic(spinner));
 }
 
+function get_charge() {
+    const spinner = document.getElementById("loading_charge");
+    spinner.style.visibility="visible";
+    read_registers(43117, 1)
+    .then(function(r) {
+        spinner.style.visibility="hidden";
+        v = r[0];
+        options = [
+            elNew("option", {
+                value: 10,
+                text: "1A",
+                selected: v == 10,
+            }),
+            elNew("option", {
+                value: 50,
+                text: "5A",
+                selected: v == 50,
+            }),
+            elNew("option", {
+                value: 1000,
+                text: "100A",
+                selected: v == 1000,
+            }),
+        ];
+        if (!options.find(e => e.selected)) {
+            options.push(
+                elNew("option", {
+                    value: r,
+                    text: r/10+"A",
+                    selected: true,
+                })
+            );
+        }
+        document.getElementById("charge_limit").replaceChildren(...options);
+    })
+    .catch(mkpanic(spinner));
+}
+
+function set_charge() {
+    v = document.getElementById("charge_limit").value;
+    if (!v) { return; }
+    write_register(43117, parseInt(v))
+    .then(function() {
+        spinner.style.visibility="hidden";
+        alert('Done!');
+    })
+    .catch(mkpanic(spinner));
+}
+
 function get_discharge() {
     const spinner = document.getElementById("loading_discharge");
     spinner.style.visibility="visible";
@@ -166,6 +215,34 @@ function set_times() {
     const spinner = document.getElementById("loading_times");
     spinner.style.visibility="visible";
     write_registers(43143, vals)
+    .then(function() {
+        spinner.style.visibility="hidden";
+        alert('Done!');
+    })
+    .catch(mkpanic(spinner));
+}
+
+function get_rates() {
+    const spinner = document.getElementById("loading_rates");
+    spinner.style.visibility="visible";
+    read_registers(43141, 2)
+    .then(function(r) {
+        spinner.style.visibility="hidden";
+        document.getElementById("timed_charge_rate").setAttribute("value", r[0]);
+        document.getElementById("timed_charge_rate").nextElementSibling.value = r[0]/10;
+        document.getElementById("timed_discharge_rate").setAttribute("value", r[1]);
+        document.getElementById("timed_discharge_rate").nextElementSibling.value = r[1]/10;
+    })
+    .catch(mkpanic(spinner));
+}
+
+function set_rates() {
+    v1 = document.getElementById("timed_charge_rate").value;
+    v2 = document.getElementById("timed_discharge_rate").value;
+    if (!v1 || !v2 || v1 < 1 || v2 < 1 || v1 > 700 || v2 > 700) { return; }
+    const spinner = document.getElementById("loading_rates");
+    spinner.style.visibility="visible";
+    write_registers(43141, [v1, v2])
     .then(function() {
         spinner.style.visibility="hidden";
         alert('Done!');

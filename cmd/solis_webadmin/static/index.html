@@ -29,6 +29,9 @@ input.time {
   width: 5em;
   border-width: 1px;
 }
+input.range {
+  width: 300px;
+}
 td {
   padding-right: 1em;
 }
@@ -98,6 +101,42 @@ button, select, legend {
   <button onclick="get_times();">Get</button>
   <button onclick="set_times();">Set</button>
   <div class="loader" id="loading_times"></div>
+</fieldset>
+<fieldset>
+  <legend>Timed charge/discharge currents</legend>
+  <table>
+  <tr>
+    <td>Charge</td>
+    <td>
+      <input class="range" type="range" id="timed_charge_rate" min="0" max="700" value="0"
+             oninput="this.nextElementSibling.value = parseFloat(this.value)/10" />
+      <output id="timed_charge_rate_value"></output>A
+    </td>
+  </tr>
+  <tr>
+    <td>Discharge</td>
+    <td>
+      <input class="range" type="range" id="timed_discharge_rate" min="0" max="700" value="0"
+             oninput="this.nextElementSibling.value = parseFloat(this.value)/10" />
+      <output id="timed_discharge_rate_value"></output>A
+    </td>
+  </tr>
+  </table>
+  <button onclick="get_rates();">Get</button>
+  <button onclick="set_rates();">Set</button>
+  <div class="loader" id="loading_rates"></div>
+</fieldset>
+<fieldset>
+  <legend>Charge limit</legend>
+  <select id="charge_limit">
+    <option value=""></option>
+    <option value="10">1A</option>
+    <option value="50">5A</option>
+    <option value="1000">100A</option>
+  </select>
+  <button onclick="get_charge();">Get</button>
+  <button onclick="set_charge();">Set</button>
+  <div class="loader" id="loading_charge"></div>
 </fieldset>
 <fieldset>
   <legend>Discharge limit</legend>
