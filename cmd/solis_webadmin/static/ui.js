@@ -102,6 +102,8 @@ function get_charge() {
 function set_charge() {
     v = document.getElementById("charge_limit").value;
     if (!v) { return; }
+    const spinner = document.getElementById("loading_charge");
+    spinner.style.visibility="visible";
     write_register(43117, parseInt(v))
     .then(function() {
         spinner.style.visibility="hidden";
@@ -151,6 +153,8 @@ function get_discharge() {
 function set_discharge() {
     v = document.getElementById("discharge_limit").value;
     if (!v) { return; }
+    const spinner = document.getElementById("loading_discharge");
+    spinner.style.visibility="visible";
     write_register(43118, parseInt(v))
     .then(function() {
         spinner.style.visibility="hidden";
