@@ -90,9 +90,19 @@ function get_charge() {
                 selected: v == 250,
             }),
             elNew("option", {
+                value: 350,
+                text: "35A",
+                selected: v == 350,
+            }),
+            elNew("option", {
                 value: 500,
                 text: "50A",
                 selected: v == 500,
+            }),
+            elNew("option", {
+                value: 700,
+                text: "70A",
+                selected: v == 700,
             }),
             elNew("option", {
                 value: 1000,
@@ -156,9 +166,19 @@ function get_discharge() {
                 selected: v == 250,
             }),
             elNew("option", {
+                value: 350,
+                text: "35A",
+                selected: v == 350,
+            }),
+            elNew("option", {
                 value: 500,
                 text: "50A",
                 selected: v == 500,
+            }),
+            elNew("option", {
+                value: 700,
+                text: "70A",
+                selected: v == 700,
             }),
             elNew("option", {
                 value: 1000,
