@@ -30,3 +30,9 @@ and HTTPS with a LetsEncrypt certificate.
 The web interface by default binds to `127.0.0.1:8502`, so it only accepts
 connections from the local host.  If you really want to expose it directly
 to network traffic, then you'll need to supply a flag like `-listen :8502`
+
+## solis_boost
+
+A secondary utility which programmes timed charges via TCP modbus, in
+response to messages from Home Assistant saying that off-peak rates are
+active.
