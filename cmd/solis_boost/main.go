@@ -94,7 +94,11 @@ func boost_loop() {
 	chan_23_30 := make_wakeup_chan(23, 30, 0)
 	chan_05_30 := make_wakeup_chan(5, 30, 0)
 
-	set_programme := func(upto time.Time) {
+	// Simple retry logic
+	var retry <-chan time.Time
+
+	set_programme := func(upto time.Time) error {
+		var err error
 		now := time.Now()
 		// Work out the end time of this programme
 		ept := upto
@@ -115,18 +119,55 @@ func boost_loop() {
 					current_charge_rate = uint16(optForceChargeRate)
 				}
 			}
-			if set_timer3(now, ept) == nil {
+			err = set_timer3(now, ept)
+			if err == nil {
 				time_prog_end = ept
 				chan_prog_end = time.After(ept.Sub(now))
 			}
 		}
+		return err
 	}
 
-	unset_programme := func() {
+	unset_programme := func() error {
 		err := set_timer3(time.Time{}, time.Time{})
 		if err != nil {
 			time_prog_end = time.Time{}
 			chan_prog_end = nil
+		}
+		return err
+	}
+
+	update := func() {
+		if lu.state == true {
+			log.Printf("state is on")
+			// prog already configured, and ends in the future? Wait until it ends
+			// before we think about changing it
+			if !time_prog_end.IsZero() && time_prog_end.After(time.Now()) {
+				log.Printf("Existing programme is active")
+				return
+			}
+			// is it between 23:29 and 05:29? Ignore, deal with it at 05:30 wakeup
+			now := time.Now()
+			if now.Hour() < 5 ||
+				(now.Hour() == 5 && now.Minute() < 30) ||
+				(now.Hour() == 23 && now.Minute() >= 29) {
+				log.Printf("Already in off-peak period")
+				return
+			}
+			// otherwise, start a programme
+			if set_programme(lu.current_end) != nil {
+				retry = time.After(5 * time.Minute)
+			}
+		} else {
+			log.Printf("state is off")
+			// If time_prog_end is set and more than 5 minutes in the future, then
+			// forcibly terminate the current programme, by zeroing it
+			if !time_prog_end.IsZero() && time_prog_end.After(time.Now().Add(5*time.Minute)) {
+				log.Printf("Terminating programme early")
+				if unset_programme() != nil {
+					retry = time.After(5 * time.Minute)
+				}
+			}
 		}
 	}
 
@@ -137,49 +178,30 @@ func boost_loop() {
 		select {
 		case r := <-boostreq:
 			lu = r
-			if r.state == true {
-				log.Printf("state is true")
-				// prog already configured, and ends in the future? Wait until it ends
-				// before we think about changing it
-				if !time_prog_end.IsZero() && time_prog_end.After(time.Now()) {
-					log.Printf("Existing programme is active")
-					continue
-				}
-				// is it between 23:29 and 05:29? Ignore, deal with it at 05:30 wakeup
-				now := time.Now()
-				if now.Hour() < 5 ||
-					(now.Hour() == 5 && now.Minute() < 30) ||
-					(now.Hour() == 23 && now.Minute() >= 29) {
-					log.Printf("Already in off-peak period")
-					continue
-				}
-				// otherwise, start a programme
-				set_programme(r.current_end)
-			} else {
-				// If time_prog_end is set and more than 5 minutes in the future, then
-				// forcibly terminate the current programme, by zeroing it
-				if !time_prog_end.IsZero() && time_prog_end.After(time.Now().Add(5*time.Minute)) {
-					log.Printf("Terminating programme early")
-					unset_programme()
-				}
-			}
+			update()
 
 		case <-chan_prog_end:
 			log.Printf("Programme end wakeup")
 			// If solis programme has ended but the current desired state is "on"
-			// then we need to extend the current programme, by overwriting it.
-			// set_programme already enforces that it must end by 23:30 today
-			// and must be for at least 5 minutes
-			if lu.state == true {
-				set_programme(lu.current_end)
-			}
+			// (and hence current_end is in the future) then we need to extend
+			// the current programme, by overwriting this. This is only done if
+			// it would extend for at least 5 minutes.
+			update()
+
+		case <-retry:
+			log.Printf("Retry")
+			retry = nil
+			update()
 
 		case <-chan_23_30:
 			log.Printf("23:30 wakeup")
 			chan_23_30 = make_wakeup_chan(23, 30, 0)
 			// Zero any programme we made, to make sure it doesn't trigger tomorrow
 			if !time_prog_end.IsZero() {
-				unset_programme()
+				if unset_programme() != nil {
+					// Retry
+					chan_23_30 = time.After(10 * time.Minute)
+				}
 			}
 			// Reset charge rate to default rate if required
 			if current_charge_rate != uint16(optDefaultChargeRate) {
@@ -194,9 +216,7 @@ func boost_loop() {
 			chan_05_30 = make_wakeup_chan(5, 30, 0)
 			// If the off-peak window has ended but the current desired state is "on"
 			// then we need to make a programme starting from now
-			if lu.state == true {
-				set_programme(lu.current_end)
-			}
+			update()
 		}
 	}
 }
