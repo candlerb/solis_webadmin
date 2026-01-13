@@ -75,7 +75,15 @@ integration in `configuration.yaml' file:
 ```
 rest_command:
   solis_boost:
-    url: "http://solis.example.com:8533/boost?state={{ trigger.to_state.state }}&current_end={{ trigger.to_state.attributes.current_end }}"
+    url: "http://solis.home.deploy2.net:8533/boost"
+    method: post
+    content_type: application/x-www-form-urlencoded
+    payload: |
+      {% set off_peak = states.binary_sensor.octopus_energy_electricity_XXXXXXXXXX_XXXXXXXXXXXXX_off_peak -%}
+      {{ urlencode(dict(
+        state=off_peak.state,
+        current_end=off_peak.attributes.current_end.isoformat() if off_peak.attributes.current_end,
+      )).decode('utf-8') }}
 ```
 
 Then create an automation which triggers on the Octopus off_peak sensor state
