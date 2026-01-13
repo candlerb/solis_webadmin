@@ -36,6 +36,7 @@ func init() {
 }
 
 func main() {
+	log.SetFlags(0) // Disable timestamps, systemd/journald adds its own
 	boostreq = make(chan *Request)
 	http.HandleFunc("/boost", BoostHandler)
 	go boost_loop()
@@ -102,8 +103,14 @@ func boost_loop() {
 		now := time.Now()
 		// Work out the end time of this programme
 		ept := upto
-		// Stop at 23:30, when our regular nightly timer takes over
-		if limit := today_clock_time(now, 23, 30, 0); ept.After(limit) {
+		// Stop at 23:30, when our regular nightly timer takes over.
+		// Actually: stop at 23:00. There's little benefit in charging from
+		// 23:00 to 23:30; if the battery empties then we'll be using grid
+		// anyway. Stopping early reduces risk of charging when Octopus
+		// decide to make this a peak slot despite dispatching; and if
+		// the charge is *only* from 23:00 to 23:30, then we avoid
+		// programming it entirely.
+		if limit := today_clock_time(now, 23, 0, 0); ept.After(limit) {
 			ept = limit
 		}
 		// Maximum 4 hours for safety
@@ -172,7 +179,10 @@ func boost_loop() {
 	}
 
 	// Force inverter into known state, also validates modbus write is working
-	unset_programme()
+	err = unset_programme()
+	if err != nil {
+		log.Fatalf("Error zeroing programme: %s", err)
+	}
 
 	for {
 		select {
