@@ -119,7 +119,7 @@ func boost_loop() {
 		}
 
 		// Only apply the programme if it ends at least 5 minutes in the future
-		if ept.After(time.Now().Add(5 * time.Minute)) {
+		if ept.After(now.Add(5 * time.Minute)) {
 			if current_charge_rate != uint16(optForceChargeRate) {
 				err = set_timed_charge_rate(uint16(optForceChargeRate))
 				if err == nil {
@@ -131,13 +131,15 @@ func boost_loop() {
 				time_prog_end = ept
 				chan_prog_end = time.After(ept.Sub(now))
 			}
+		} else {
+			log.Printf("Not setting programme: end time would be %s", ept)
 		}
 		return err
 	}
 
 	unset_programme := func() error {
 		err := set_timer3(time.Time{}, time.Time{})
-		if err != nil {
+		if err == nil {
 			time_prog_end = time.Time{}
 			chan_prog_end = nil
 		}
@@ -145,16 +147,17 @@ func boost_loop() {
 	}
 
 	update := func() {
-		if lu.state == true {
-			log.Printf("state is on")
+		// we are looking at lu (last update), which might have been received some time in the past
+		now := time.Now()
+		if lu.state == true && !lu.current_end.IsZero() && lu.current_end.After(now) {
+			log.Printf("off_peak is active")
 			// prog already configured, and ends in the future? Wait until it ends
 			// before we think about changing it
-			if !time_prog_end.IsZero() && time_prog_end.After(time.Now()) {
+			if !time_prog_end.IsZero() && time_prog_end.After(now) {
 				log.Printf("Existing programme is active")
 				return
 			}
 			// is it between 23:29 and 05:29? Ignore, deal with it at 05:30 wakeup
-			now := time.Now()
 			if now.Hour() < 5 ||
 				(now.Hour() == 5 && now.Minute() < 30) ||
 				(now.Hour() == 23 && now.Minute() >= 29) {
@@ -166,10 +169,10 @@ func boost_loop() {
 				retry = time.After(5 * time.Minute)
 			}
 		} else {
-			log.Printf("state is off")
+			log.Printf("off_peak is inactive")
 			// If time_prog_end is set and more than 5 minutes in the future, then
 			// forcibly terminate the current programme, by zeroing it
-			if !time_prog_end.IsZero() && time_prog_end.After(time.Now().Add(5*time.Minute)) {
+			if !time_prog_end.IsZero() && time_prog_end.After(now.Add(5*time.Minute)) {
 				log.Printf("Terminating programme early")
 				if unset_programme() != nil {
 					retry = time.After(5 * time.Minute)
@@ -188,14 +191,16 @@ func boost_loop() {
 		select {
 		case r := <-boostreq:
 			lu = r
+			// lu.state=on: start a new programme, unless one is already running,
+			// and as long as the new programme would run for at last 5 minutes.
+			// lu.state=off: if a programme is already running then terminate it,
+			// unless it would already end in the next 5 minutes.
 			update()
 
 		case <-chan_prog_end:
 			log.Printf("Programme end wakeup")
 			// If solis programme has ended but the current desired state is "on"
-			// (and hence current_end is in the future) then we need to extend
-			// the current programme, by overwriting this. This is only done if
-			// it would extend for at least 5 minutes.
+			// (and ends at least 5 mins in the future) then write a new programme.
 			update()
 
 		case <-retry:
@@ -215,8 +220,7 @@ func boost_loop() {
 			}
 			// Reset charge rate to default rate if required
 			if current_charge_rate != uint16(optDefaultChargeRate) {
-				err = set_timed_charge_rate(uint16(optDefaultChargeRate))
-				if err == nil {
+				if set_timed_charge_rate(uint16(optDefaultChargeRate)) == nil {
 					current_charge_rate = uint16(optDefaultChargeRate)
 				}
 			}
@@ -225,7 +229,7 @@ func boost_loop() {
 			log.Printf("05:30 wakeup")
 			chan_05_30 = make_wakeup_chan(5, 30, 0)
 			// If the off-peak window has ended but the current desired state is "on"
-			// then we need to make a programme starting from now
+			// (and ends at least 5 mins in the future) then start a new programme.
 			update()
 		}
 	}
