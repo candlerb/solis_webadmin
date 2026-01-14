@@ -78,9 +78,9 @@ func BoostHandler(w http.ResponseWriter, r *http.Request) {
 
 func boost_loop() {
 	// Start by reading the current charge rate. This tests out modbus
-	current_charge_rate, err := read_register(optTarget, byte(optStation), TIMED_CHARGE_RATE)
-	if err != nil {
-		log.Fatalf("Error reading timed charge rate (reg TIMED_CHARGE_RATE): %s", err)
+	current_charge_rate, err1 := read_register(optTarget, byte(optStation), TIMED_CHARGE_RATE)
+	if err1 != nil {
+		log.Fatalf("Error reading timed charge rate (reg TIMED_CHARGE_RATE): %s", err1)
 	}
 	log.Printf("Initial timed charge rate: %d", current_charge_rate)
 
@@ -121,8 +121,7 @@ func boost_loop() {
 		// Only apply the programme if it ends at least 5 minutes in the future
 		if ept.After(now.Add(5 * time.Minute)) {
 			if current_charge_rate != uint16(optForceChargeRate) {
-				err = set_timed_charge_rate(uint16(optForceChargeRate))
-				if err == nil {
+				if set_timed_charge_rate(uint16(optForceChargeRate)) == nil {
 					current_charge_rate = uint16(optForceChargeRate)
 				}
 			}
@@ -147,8 +146,8 @@ func boost_loop() {
 	}
 
 	update := func() {
-		// we are looking at lu (last update), which might have been received some time in the past
 		now := time.Now()
+		// we are looking at lu (last update), which might have been received some time in the past
 		if lu.state == true && !lu.current_end.IsZero() && lu.current_end.After(now) {
 			log.Printf("off_peak is active")
 			// prog already configured, and ends in the future? Wait until it ends
@@ -182,7 +181,7 @@ func boost_loop() {
 	}
 
 	// Force inverter into known state, also validates modbus write is working
-	err = unset_programme()
+	err := unset_programme()
 	if err != nil {
 		log.Fatalf("Error zeroing programme: %s", err)
 	}
